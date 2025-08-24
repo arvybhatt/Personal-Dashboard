@@ -15,7 +15,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp",
         builder => builder
-            .WithOrigins("http://localhost:5173") // Default Vite dev server port
+            .WithOrigins(
+                "http://localhost:5173", // Default Vite dev server port
+                "http://localhost:5174", // Alternative Vite dev server port
+                "https://witty-desert-0f079c700.azurestaticapps.net" // Production Azure Static Web Apps URL
+            )
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials());
