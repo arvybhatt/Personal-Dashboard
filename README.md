@@ -16,10 +16,15 @@ A professional, dashboard-style personal website built with React and Tailwind C
 
 ## Tech Stack
 
+### Frontend
 - React with Vite for fast development
 - Tailwind CSS for styling
 - React Icons for high-quality icons
 - React Scroll for smooth scrolling
+
+### Backend
+- .NET 8.0 Web API
+- Azure Cosmos DB for contact form data storage
 
 ## Getting Started
 
@@ -40,12 +45,18 @@ A professional, dashboard-style personal website built with React and Tailwind C
    npm install
    ```
 
-3. Start the development server
+3. Start the frontend development server
    ```
    npm run dev
    ```
 
-4. Open your browser and visit `http://localhost:5173`
+4. In another terminal, start the backend API server
+   ```
+   cd api
+   dotnet run
+   ```
+
+5. Open your browser and visit `http://localhost:5173`
 
 ### Building for Production
 

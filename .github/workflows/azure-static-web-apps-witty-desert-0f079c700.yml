@@ -1,4 +1,4 @@
-name: Azure Static Web Apps CI/CD
+name: Azure Static Web Apps and API CI/CD
 
 on:
   push:
@@ -10,10 +10,10 @@ on:
       - master
 
 jobs:
-  build_and_deploy_job:
+  build_and_deploy_frontend:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
-    name: Build and Deploy Job
+    name: Build and Deploy Frontend
     permissions:
        id-token: write
        contents: read
@@ -32,6 +32,20 @@ jobs:
                const coredemo = require('@actions/core')
                return await coredemo.getIDToken()
            result-encoding: string
+      - name: Update Vite Config
+        run: |
+          # Create a production-specific vite.config.js
+          cat > vite.config.js << 'EOF'
+          import { defineConfig } from 'vite'
+          import react from '@vitejs/plugin-react'
+
+          // https://vite.dev/config/
+          export default defineConfig({
+            plugins: [react()],
+            // In production, we don't need the proxy as we'll use the actual API URL
+            // The API URL will be handled by Azure Static Web Apps in production
+          })
+          EOF
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
@@ -45,6 +59,55 @@ jobs:
           output_location: "dist" # Built app content directory - optional
           github_id_token: ${{ steps.idtoken.outputs.result }}
           ###### End of Repository/Build Configurations ######
+          
+  build_and_deploy_backend:
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    name: Build and Deploy Backend API
+    environment:
+      name: 'Production'
+      # You only need to specify the URL of where the backend will be deployed
+      url: ${{ secrets.AZURE_WEBAPP_URL }}
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+          
+      - name: Build with dotnet
+        run: dotnet build ./api/api.csproj --configuration Release
+        
+      - name: dotnet publish
+        run: dotnet publish ./api/api.csproj -c Release -o ${{env.DOTNET_ROOT}}/myapp
+        
+      # We'll use the existing appsettings.json file that already has the Cosmos DB settings
+      # This step is left as a comment in case you need to override settings in the future
+      # - name: Update appsettings.json with Cosmos DB Connection
+      #   run: |
+      #     # Use jq to update the appsettings.json file with the secrets
+      #     apt-get update && apt-get install -y jq
+      #     jq '.CosmosDb.AccountEndpoint = "${{ secrets.COSMOS_DB_ENDPOINT }}" | 
+      #         .CosmosDb.AccountKey = "${{ secrets.COSMOS_DB_KEY }}" | 
+      #         .CosmosDb.DatabaseName = "${{ secrets.COSMOS_DB_DATABASE }}" |
+      #         .CosmosDb.ContainerName = "${{ secrets.COSMOS_DB_CONTAINER }}"' \
+      #         ${{env.DOTNET_ROOT}}/myapp/appsettings.json > ${{env.DOTNET_ROOT}}/myapp/appsettings.json.tmp
+      #     mv ${{env.DOTNET_ROOT}}/myapp/appsettings.json.tmp ${{env.DOTNET_ROOT}}/myapp/appsettings.json
+          
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v3
+        with:
+          name: .net-app
+          path: ${{env.DOTNET_ROOT}}/myapp
+          
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ${{env.DOTNET_ROOT}}/myapp
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
@@ -56,4 +119,5 @@ jobs:
         uses: Azure/static-web-apps-deploy@v1
         with:
           action: "close"
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_WITTY_DESERT_0F079C700 }}
 
