@@ -76,9 +76,38 @@ The build output will be in the `dist` folder, ready to be deployed to any stati
 
 ## Deployment
 
-This website can be deployed to any static site hosting service:
-
+### Frontend
+The frontend can be deployed to any static site hosting service:
 - GitHub Pages
 - Netlify
 - Vercel
 - Firebase Hosting
+- Azure Static Web Apps
+
+### Backend
+The backend API is configured for deployment to Azure App Service using GitHub Actions.
+
+### Azure Deployment Configuration
+
+1. **Required GitHub Secrets**
+   
+   To deploy successfully with the GitHub workflow, add these secrets to your repository:
+   
+   - `AZURE_WEBAPP_NAME`: The name of your Azure Web App for the backend API
+   - `AZURE_WEBAPP_PUBLISH_PROFILE`: The publish profile from your Azure Web App
+   - `AZURE_WEBAPP_URL`: The URL of your deployed backend API (e.g., https://your-api.azurewebsites.net)
+
+2. **Azure App Service Configuration**
+   
+   After deployment, ensure the App Service has these application settings:
+   
+   - `CosmosDb:AccountEndpoint`: Your Cosmos DB endpoint URL
+   - `CosmosDb:AccountKey`: Your Cosmos DB primary key
+   - `CosmosDb:DatabaseName`: "MySiteDb" (or your chosen name)
+   - `CosmosDb:ContainerName`: "GetInTouchTable" (or your chosen name)
+
+3. **Azure Static Web Apps Configuration**
+   
+   Configure your Static Web App to route API requests to your App Service:
+   
+   - Add a route in the Static Web App configuration: `/api/*` → your App Service URL
