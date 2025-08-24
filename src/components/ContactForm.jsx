@@ -10,7 +10,8 @@ const ContactForm = () => {
   const [formStatus, setFormStatus] = useState({
     submitted: false,
     success: false,
-    message: ''
+    message: '',
+    loading: false
   });
 
   const handleChange = (e) => {
@@ -21,24 +22,52 @@ const ContactForm = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // For a static site, we'll just simulate a submission
-    // In a real implementation, you'd connect this to a form submission service
-    
-    setFormStatus({
-      submitted: true,
-      success: true,
-      message: 'Thank you for your message! This is a static form, so no actual submission occurred.'
-    });
-    
-    // Clear form
-    setFormData({
-      name: '',
-      email: '',
-      message: ''
-    });
+    try {
+      setFormStatus(prev => ({
+        ...prev,
+        loading: true
+      }));
+      
+      // Connect to our .NET API endpoint
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email: formData.email })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      setFormStatus({
+        submitted: true,
+        success: true,
+        message: 'Thank you for your message! We\'ll get back to you soon.',
+        loading: false
+      });
+      
+      // Clear form
+      setFormData({
+        name: '',
+        email: '',
+        message: ''
+      });
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setFormStatus({
+        submitted: true,
+        success: false,
+        message: 'Sorry, there was an error submitting your message. Please try again later.',
+        loading: false
+      });
+    }
   };
 
   return (
@@ -61,6 +90,7 @@ const ContactForm = () => {
               onChange={handleChange}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
               required
+              disabled={formStatus.loading}
             />
           </div>
           
@@ -74,6 +104,7 @@ const ContactForm = () => {
               onChange={handleChange}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
               required
+              disabled={formStatus.loading}
             />
           </div>
           
@@ -87,15 +118,17 @@ const ContactForm = () => {
               onChange={handleChange}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
               required
+              disabled={formStatus.loading}
             />
           </div>
           
           <div>
             <button 
               type="submit"
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={formStatus.loading}
             >
-              Send Message
+              {formStatus.loading ? 'Sending...' : 'Send Message'}
             </button>
           </div>
         </form>
